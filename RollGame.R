@@ -9,7 +9,7 @@ library(ROCR)
 
 #Set workspace directory
 
-setwd("./Target Size Test/Data")
+setwd("./data/TargetSizeTestDataOutsetCenterGoal/Data")
 #setwd("/Users/hendrik/Dropbox/BNC/Analysis/LR studies/Target Size Test/Data")
 #Load data from workspace directory
 
@@ -36,7 +36,7 @@ for(fileName in dir()){
   }
 }
 
-LR6participants<-distinct()
+LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails")])
 
 data$tempTargetX<-data$TargetY
 data$tempTargetY<-181-data$TargetX
