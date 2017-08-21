@@ -9,8 +9,8 @@ library(ROCR)
 
 #Set workspace directory
 
-#setwd("C:/Users/kh/AppData/LocalLow/AAU/Target Size Test/Data")
-setwd("/Users/hendrik/Dropbox/BNC/Analysis/LR studies/Target Size Test/Data")
+setwd("./Target Size Test/Data")
+#setwd("/Users/hendrik/Dropbox/BNC/Analysis/LR studies/Target Size Test/Data")
 #Load data from workspace directory
 
 data<-data.frame()

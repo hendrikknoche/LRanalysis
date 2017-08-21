@@ -1,0 +1,6 @@
+{"type":"custom","ts":1497970055969,"name":"unity.sceneLoad","custom_params":{"level_name":"TestScene","level_num":0,"total_levels":1}}
+{"type":"sceneLoadingTime","ts":1497970055989,"scene_name":"Loading Temp/__Backupscenes/0.backup","background_time":0.495930016040802,"integrate_time":22.952104568481447,"ts_integrate_time":0.0014659999869763852,"total_time":40.455570220947269}
+{"type":"custom","ts":1497970066195,"name":"unity.sceneLoad","custom_params":{"level_name":"TestScene","level_num":0,"total_levels":1}}
+{"type":"sceneLoadingTime","ts":1497970066207,"scene_name":"Loading Temp/__Backupscenes/0.backup","background_time":0.9467769861221314,"integrate_time":12.879173278808594,"ts_integrate_time":0.0014659999869763852,"total_time":30.591930389404298}
+{"type":"appRunning","ts":1497970066237,"duration":10,"local_time_offset":0}
+(1){"type":"appStop","ts":1497970066241}
