@@ -123,11 +123,13 @@ mergedData<-mergedData[order(c(mergedData$Filedata$Time,mergedData$Time)),]
 
 
 fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+summary(fit)
 step(fit)
 
 
 
 fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral+OutsetYcoded+GoalXcoded*toIpsilateral+GoalYcoded+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+summary(fit)
 step(fit)
 
 fit <- lm(TouchOffsetY ~ OutsetYcoded+GoalYcoded+CrossTargetCoded+TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
