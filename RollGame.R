@@ -127,7 +127,7 @@ fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*Dom
 summary(fit)
 step(fit)
 
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" & data$DominantHandCoded==-1),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHandCoded))+geom_point(alpha=.3)
+ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHand))+geom_point(alpha=.3)
 
 fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded*toIpsilateral+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)
