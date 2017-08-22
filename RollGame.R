@@ -6,6 +6,7 @@ libloc= Sys.getenv("R_LIBS_USER")
 library(ggplot2)
 library(Rmisc)
 library(ROCR)
+library(dplyr)
 
 #Set workspace directory
 
@@ -36,7 +37,7 @@ for(fileName in dir()){
   }
 }
 
-LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails")])
+LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
 
 data$tempTargetX<-data$TargetY
 data$tempTargetY<-181-data$TargetX
@@ -126,13 +127,14 @@ fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*Dom
 summary(fit)
 step(fit)
 
+ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" & data$DominantHandCoded==-1),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHandCoded))+geom_point(alpha=.3)
 
-
-fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral+OutsetYcoded+GoalXcoded*toIpsilateral+GoalYcoded+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded*toIpsilateral+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)
 step(fit)
+summary(fit)
 
-fit <- lm(TouchOffsetY ~ OutsetYcoded+GoalYcoded+CrossTargetCoded+TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+fit <- lm(TouchOffsetY ~ OutsetYcoded+GoalYcoded+CrossTargetCoded+TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & & data$MistakeOccured == "No"),])
 step(fit)
 
 fit <- lm(slideX ~ OutsetXcoded+OutsetYcoded+GoalXcoded+GoalYcoded+CrossTargetCoded+TargetSize+DominantHandCoded+GoalXcoded*DominantHandCoded+OutsetXcoded*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
