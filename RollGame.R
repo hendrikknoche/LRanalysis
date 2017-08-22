@@ -110,8 +110,8 @@ data$OutsetYcoded<-ifelse(data$Outset == "S",-1,ifelse(data$Outset == "N",1,0))
 data$GoalXcoded<-ifelse(data$Goal == "W",-1,ifelse(data$Goal == "E",1,0))
 data$GoalYcoded<-ifelse(data$Goal == "S",-1,ifelse(data$Goal == "N",1,0))
 data$CrossTargetCoded<-ifelse(data$CrossTargets == "True",1,0)
-data$fromIpsilateral<-ifelse(data$OutsetXcoded==data$DominantHand,1,0)
-data$toIpsilateral<-ifelse(data$GoalXcoded==data$DominantHand,1,0)
+data$fromIpsilateral<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,0)
+data$toIpsilateral<-ifelse(data$GoalXcoded==data$DominantHandCoded,1,0)
   
 data$slideX<-data$LiftOffsetX-data$TouchOffsetX
 data$slideY<-data$LiftOffsetY-data$TouchOffsetY
