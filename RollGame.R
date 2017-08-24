@@ -39,66 +39,66 @@ for(fileName in dir()){
 
 LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
 
-data$tempTargetX<-data$TargetY
-data$tempTargetY<-181-data$TargetX
+data$tempTargetX<-102-data$TargetY
+data$tempTargetY<-data$TargetX
 data$TargetX<-data$tempTargetX
 data$TargetY<-data$tempTargetY
 data$tempTargetX<-NULL
 data$tempTargetY<-NULL
 
-data$tempLiftX<-data$LiftY
-data$tempLiftY<-181-data$LiftX
+data$tempLiftX<-102-data$LiftY
+data$tempLiftY<-data$LiftX
 data$LiftX<-data$tempTargetX
 data$LiftY<-data$tempLiftY
 data$tempLiftX<-NULL
 data$tempLiftY<-NULL
 
-touchData$tempTouchX<-data$TouchY
-touchData$tempTouchY<-181-touchData$TouchX
+touchData$tempTouchX<-102-data$TouchY
+touchData$tempTouchY<-touchData$TouchX
 touchData$TouchX<-touchData$tempTouchX
 touchData$TouchY<-touchData$tempTouchY
 touchData$tempTouchX<-NULL
 touchData$tempTouchY<-NULL
 
-touchData$tempFirstTouchX<-touchData$FirstTouchY
-touchData$tempFirstTouchY<-181-touchData$FirstTouchX
+touchData$tempFirstTouchX<-102-touchData$FirstTouchY
+touchData$tempFirstTouchY<-touchData$FirstTouchX
 touchData$FirstTouchX<-touchData$tempFirstTouchX
 touchData$FirstTouchY<-touchData$tempFirstTouchY
 touchData$tempFirstTouchX<-NULL
 touchData$tempFirstTouchY<-NULL
 
-data$tempTouchOffsetX<-data$TouchOffsetY
-data$tempTouchOffsetY<--data$TouchOffsetX
+data$tempTouchOffsetX<--data$TouchOffsetY
+data$tempTouchOffsetY<-data$TouchOffsetX
 data$TouchOffsetX<-data$tempTouchOffsetX
 data$TouchOffsetY<-data$tempTouchOffsetY
 data$tempTouchOffsetX<-NULL
 data$tempTouchOffsetY<-NULL
 
-data$tempLiftOffsetX<-data$LiftOffsetY
-data$tempLiftOffsetY<--data$LiftOffsetX
+data$tempLiftOffsetX<--data$LiftOffsetY
+data$tempLiftOffsetY<-data$LiftOffsetX
 data$LiftOffsetX<-data$tempLiftOffsetX
 data$LiftOffsetY<-data$tempLiftOffsetY
 data$tempLiftOffsetX<-NULL
 data$tempLiftffsetY<-NULL
 
-touchData$tempTouchDeltaX<-touchData$TouchDeltaY
-touchData$tempTouchDeltaY<--touchData$TouchDeltaX
+touchData$tempTouchDeltaX<--touchData$TouchDeltaY
+touchData$tempTouchDeltaY<-touchData$TouchDeltaX
 touchData$TouchDeltaX<-touchData$tempTouchDeltaX
 touchData$TouchDeltaY<-touchData$tempTouchDeltaY
 touchData$tempTouchDeltaX<-NULL
 touchData$tempTouchDeltaY<-NULL
 
-data$tempOutset[data$Outset == "N"]<-"E"
-data$tempOutset[data$Outset == "S"]<-"W"
-data$tempOutset[data$Outset == "E"]<-"S"
-data$tempOutset[data$Outset == "W"]<-"N"
+data$tempOutset[data$Outset == "N"]<-"W"
+data$tempOutset[data$Outset == "S"]<-"E"
+data$tempOutset[data$Outset == "E"]<-"N"
+data$tempOutset[data$Outset == "W"]<-"S"
 data$Outset<-data$tempOutset
 data$tempOutset<-NULL
 
-data$tempGoal[data$Goal == "N"]<-"E"
-data$tempGoal[data$Goal == "S"]<-"W"
-data$tempGoal[data$Goal == "E"]<-"S"
-data$tempGoal[data$Goal == "W"]<-"N"
+data$tempGoal[data$Goal == "N"]<-"W"
+data$tempGoal[data$Goal == "S"]<-"E"
+data$tempGoal[data$Goal == "E"]<-"N"
+data$tempGoal[data$Goal == "W"]<-"S"
 data$Goal<-data$tempGoal
 data$tempGoal<-NULL
 
@@ -127,12 +127,13 @@ fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*Dom
 summary(fit)
 step(fit)
 
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" & data$DominantHandCoded==-1),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHandCoded))+geom_point(alpha=.3)
+ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHand))+geom_point(alpha=.3)
 
 fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded*toIpsilateral+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)
 step(fit)
-summary(fit)
+summary(step(fit))
+
 
 fit <- lm(TouchOffsetY ~ OutsetYcoded+GoalYcoded+CrossTargetCoded+TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & & data$MistakeOccured == "No"),])
 step(fit)
@@ -142,11 +143,6 @@ summary(fit)
 
 fit <- lm(slideY ~ OutsetXcoded+OutsetYcoded+GoalXcoded+GoalYcoded+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 step(fit)
-
-
-
-
-
 
 
 dataSummaryXtouch<-summarySE(data[which(data$HitType == "Center" & data$MistakeOccured == "No"),], c("TouchOffsetX"), c("OutsetXcoded","OutsetYcoded","GoalXcoded","GoalYcoded","DominantHandCoded"), conf.interval = 0.95)
@@ -178,12 +174,6 @@ ggplot(dataSummary, aes(x = TouchOffsetX, y = TouchOffsetY, color = factor(Domin
   coord_fixed()
 
 
-
-
-
-
-
-
 dataSummaryXslide<-summarySE(data[which(data$HitType == "Center" & data$MistakeOccured == "No"),], c("slideX"), c("OutsetXcoded","OutsetYcoded","GoalXcoded","GoalYcoded","DominantHandCoded"), conf.interval = 0.95)
 dataSummaryYslide<-summarySE(data[which(data$HitType == "Center" & data$MistakeOccured == "No"),], c("slideY"), c("OutsetXcoded","OutsetYcoded","GoalXcoded","GoalYcoded","DominantHandCoded"), conf.interval = 0.95)
 
@@ -202,17 +192,7 @@ ggplot(dataSummarySlide, aes(x = slideX, y = slideY, color = factor(DominantHand
   coord_fixed(xlim = c(-3,3), ylim = c(-3,3))
 
 
-
-
-
-
-
-
-
-
-
-
-
+ 
 dataSummaryXslideOutset<-summarySE(data[which(data$HitType == "Center" & data$MistakeOccured == "No"),], c("slideX"), c("OutsetXcoded","OutsetYcoded","DominantHandCoded"), conf.interval = 0.95)
 dataSummaryYslideOutset<-summarySE(data[which(data$HitType == "Center" & data$MistakeOccured == "No"),], c("slideY"), c("OutsetXcoded","OutsetYcoded","DominantHandCoded"), conf.interval = 0.95)
 
