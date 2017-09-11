@@ -9,11 +9,11 @@ library(ROCR)
 library(dplyr)
 library(readxl)
 Handedness_Responses_Form_responses_1 <- read_excel("~/git/AAU/LRanalysis/data/Handedness (Responses) - Form responses 1.xlsx", 
-                                                      +     col_types = c("date", "numeric", "text", 
-                                                                          +         "text", "text", "text", "text", "text", 
-                                                                          +         "text", "text", "text", "text", "text", 
-                                                                          +         "text", "numeric", "numeric", "numeric", 
-                                                                          +         "numeric", "numeric"))
+                                                    +     col_types = c("date", "numeric", "text", 
+                                                                        +         "text", "text", "text", "text", "text", 
+                                                                        +         "text", "text", "text", "text", "text", 
+                                                                        +         "text", "numeric", "numeric", "numeric", 
+                                                                        +         "numeric", "numeric"))
 
 #Set workspace directory
 
@@ -120,7 +120,7 @@ data$GoalYcoded<-ifelse(data$Goal == "S",-1,ifelse(data$Goal == "N",1,0))
 data$CrossTargetCoded<-ifelse(data$CrossTargets == "True",1,0)
 data$fromIpsilateral<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,0)
 data$toIpsilateral<-ifelse(data$GoalXcoded==data$DominantHandCoded,1,0)
-  
+
 data$slideX<-data$LiftOffsetX-data$TouchOffsetX
 data$slideY<-data$LiftOffsetY-data$TouchOffsetY
 
@@ -199,7 +199,7 @@ ggplot(dataSummarySlide, aes(x = slideX, y = slideY, color = factor(DominantHand
   coord_fixed(xlim = c(-3,3), ylim = c(-3,3))
 
 
- 
+
 dataSummaryXslideOutset<-summarySE(data[which(data$HitType == "Center" & data$MistakeOccured == "No"),], c("slideX"), c("OutsetXcoded","OutsetYcoded","DominantHandCoded"), conf.interval = 0.95)
 dataSummaryYslideOutset<-summarySE(data[which(data$HitType == "Center" & data$MistakeOccured == "No"),], c("slideY"), c("OutsetXcoded","OutsetYcoded","DominantHandCoded"), conf.interval = 0.95)
 
