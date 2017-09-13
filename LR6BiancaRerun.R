@@ -46,29 +46,34 @@ for(fileName in dir()){
 
 LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
 
-data$tempTargetX<-102-data$TargetY
-data$tempTargetY<-data$TargetX
+
+
+MaxX<- 154 # after the rotation this is correct, the 154mm come from the landscape orientation of the device with 0,0 in the upper left corner 
+MaxY<- 90  # after the rotation this is correct, the 90mm come from the landscape orientation of the device with 0,0 in the upper left corner 
+
+data$tempTargetX<-data$TargetY
+data$tempTargetY<-MaxX-data$TargetX
 data$TargetX<-data$tempTargetX
 data$TargetY<-data$tempTargetY
 data$tempTargetX<-NULL
 data$tempTargetY<-NULL
 
-data$tempLiftX<-102-data$LiftY
-data$tempLiftY<-data$LiftX
+data$tempLiftX<-data$LiftY
+data$tempLiftY<-MaxX-data$LiftX
 data$LiftX<-data$tempTargetX
 data$LiftY<-data$tempLiftY
 data$tempLiftX<-NULL
 data$tempLiftY<-NULL
 
-touchData$tempTouchX<-102-data$TouchY
-touchData$tempTouchY<-touchData$TouchX
+touchData$tempTouchX<-data$TouchY
+touchData$tempTouchY<-MaxX-touchData$TouchX
 touchData$TouchX<-touchData$tempTouchX
 touchData$TouchY<-touchData$tempTouchY
 touchData$tempTouchX<-NULL
 touchData$tempTouchY<-NULL
 
-touchData$tempFirstTouchX<-102-touchData$FirstTouchY
-touchData$tempFirstTouchY<-touchData$FirstTouchX
+touchData$tempFirstTouchX<-touchData$FirstTouchY
+touchData$tempFirstTouchY<-MaxX-touchData$FirstTouchX
 touchData$FirstTouchX<-touchData$tempFirstTouchX
 touchData$FirstTouchY<-touchData$tempFirstTouchY
 touchData$tempFirstTouchX<-NULL
@@ -81,8 +86,8 @@ data$TouchOffsetY<-data$tempTouchOffsetY
 data$tempTouchOffsetX<-NULL
 data$tempTouchOffsetY<-NULL
 
-data$tempLiftOffsetX<--data$LiftOffsetY
-data$tempLiftOffsetY<-data$LiftOffsetX
+data$tempLiftOffsetX<-data$LiftOffsetY
+data$tempLiftOffsetY<-MaxX-data$LiftOffsetX
 data$LiftOffsetX<-data$tempLiftOffsetX
 data$LiftOffsetY<-data$tempLiftOffsetY
 data$tempLiftOffsetX<-NULL
@@ -95,17 +100,17 @@ touchData$TouchDeltaY<-touchData$tempTouchDeltaY
 touchData$tempTouchDeltaX<-NULL
 touchData$tempTouchDeltaY<-NULL
 
-data$tempOutset[data$Outset == "N"]<-"W"
-data$tempOutset[data$Outset == "S"]<-"E"
-data$tempOutset[data$Outset == "E"]<-"N"
-data$tempOutset[data$Outset == "W"]<-"S"
+data$tempOutset[data$Outset == "N"]<-"E"
+data$tempOutset[data$Outset == "S"]<-"W"
+data$tempOutset[data$Outset == "E"]<-"S"
+data$tempOutset[data$Outset == "W"]<-"N"
 data$Outset<-data$tempOutset
 data$tempOutset<-NULL
 
-data$tempGoal[data$Goal == "N"]<-"W"
-data$tempGoal[data$Goal == "S"]<-"E"
-data$tempGoal[data$Goal == "E"]<-"N"
-data$tempGoal[data$Goal == "W"]<-"S"
+data$tempGoal[data$Goal == "N"]<-"E"
+data$tempGoal[data$Goal == "S"]<-"W"
+data$tempGoal[data$Goal == "E"]<-"S"
+data$tempGoal[data$Goal == "W"]<-"N"
 data$Goal<-data$tempGoal
 data$tempGoal<-NULL
 
@@ -134,7 +139,7 @@ fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*Dom
 summary(fit)
 step(fit)
 
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHand))+geom_point(alpha=.3)+facet_grid(.~UserID)
+ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = Outset))+geom_point(alpha=.3)+facet_grid(.~UserID)
 
 fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded*toIpsilateral+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)

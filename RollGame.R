@@ -8,16 +8,16 @@ library(Rmisc)
 library(ROCR)
 library(dplyr)
 library(readxl)
-Handedness_Responses_Form_responses_1 <- read_excel("~/git/AAU/LRanalysis/data/Handedness (Responses) - Form responses 1.xlsx", 
-                                                      +     col_types = c("date", "numeric", "text", 
-                                                                          +         "text", "text", "text", "text", "text", 
-                                                                          +         "text", "text", "text", "text", "text", 
-                                                                          +         "text", "numeric", "numeric", "numeric", 
-                                                                          +         "numeric", "numeric"))
+Handedness_Responses_Form_responses_1 <- read_excel("~/git/AAU/LRanalysis/data/Handedness (Responses) - Form responses 1.xlsx",      
+col_types = c("date", "numeric", "text", 
+                                                                                  "text", "text", "text", "text", "text", 
+                                                                                   "text", "text", "text", "text", "text", 
+                                                                          "text", "numeric", "numeric", "numeric", 
+                                                                                   "numeric", "numeric"))
 
 #Set workspace directory
 
-setwd("~/git/AAU/LRanalysis/data/LR6rerunBianca")
+setwd("~/git/AAU/LRanalysis/data/TargetSizeTestDataOutsetCenterGoal/Data")
 #setwd("/Users/hendrik/Dropbox/BNC/Analysis/LR studies/Target Size Test/Data")
 #Load data from workspace directory
 
@@ -134,9 +134,9 @@ fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*Dom
 summary(fit)
 step(fit)
 
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHand))+geom_point(alpha=.3)+facet_grid(.~UserID)
+ggplot(data=data[which(data$HitType == "Center" & data$TargetSize==6 & data$CrossTargets=="False" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHand))+geom_point(alpha=.3)+facet_grid(.~UserID)
 
-fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded*toIpsilateral+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded*toIpsilateral+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" &  data$MistakeOccured == "No"),])
 summary(fit)
 step(fit)
 summary(step(fit))
