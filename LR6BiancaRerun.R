@@ -47,6 +47,9 @@ for(fileName in dir()){
 LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
 
 
+# Bianca's comment: Point (0,0) is the lower left corner with landscape orientation.
+# All presses on the black menu bar is logged as any other position on the touch screen. 
+# The target objects are centred on the white background, meaning that a target object has the same distance to the edge of the display as the menu bar. 
 
 MaxX<- 154 # after the rotation this is correct, the 154mm come from the landscape orientation of the device with 0,0 in the upper left corner 
 MaxY<- 90  # after the rotation this is correct, the 90mm come from the landscape orientation of the device with 0,0 in the upper left corner 
