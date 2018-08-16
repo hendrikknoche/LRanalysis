@@ -8,12 +8,13 @@ library(Rmisc)
 library(ROCR)
 library(dplyr)
 library(readxl)
-Handedness_Responses_Form_responses_1 <- read_excel("~/git/AAU/LRanalysis/data/Handedness (Responses) - Form responses 1.xlsx", 
-                                                    +     col_types = c("date", "numeric", "text", 
-                                                                        +         "text", "text", "text", "text", "text", 
-                                                                        +         "text", "text", "text", "text", "text", 
-                                                                        +         "text", "numeric", "numeric", "numeric", 
-                                                                        +         "numeric", "numeric"))
+Handedness_Responses_Form_responses_1 <- read_excel("~/git/AAU/LRanalysis/data/Handedness (Responses) - Form responses 1.xlsx")
+# , 
+#                                                     +     col_types = c("date", "numeric", "text", 
+#                                                                         +         "text", "text", "text", "text", "text", 
+#                                                                         +         "text", "text", "text", "text", "text", 
+#                                                                         +         "text", "numeric", "numeric", "numeric", 
+#                                                                         +         "numeric", "numeric"))
 
 #Set workspace directory
 
