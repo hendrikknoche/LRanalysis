@@ -51,7 +51,7 @@ LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNai
 # Bianca's comment: Point (0,0) is the lower left corner with landscape orientation.
 # All presses on the black menu bar is logged as any other position on the touch screen. 
 # The target objects are centred on the white background, meaning that a target object has the same distance to the edge of the display as the menu bar. 
-
+#HK comment: about additinoal fields - OutsetXcoded GoalXCoded represent from which side the target is approached (left, -1, right 1)
 MaxX<- 154 # after the rotation this is correct, the 154mm come from the landscape orientation of the device with 0,0 in the upper left corner 
 MaxY<- 90  # after the rotation this is correct, the 90mm come from the landscape orientation of the device with 0,0 in the upper left corner 
 
@@ -141,7 +141,8 @@ mergedData<-mergedData[order(c(mergedData$Filedata$Time,mergedData$Time)),]
 
 fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)
-step(fit)
+summary(step(fit))
+
 
 ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = Outset))+geom_point(alpha=.3)+facet_grid(.~UserID)
 
