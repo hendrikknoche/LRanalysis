@@ -46,7 +46,12 @@ for(fileName in dir()){
 }
 
 LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
-
+data$pStageNumFlags<-NA
+data[1,]$pStageNumFlags<-1
+data[2:nrow(data),]$pStageNumFlags<-ifelse(!(data[2:nrow(data),]$UserID==data[1:nrow(data)-1,]$UserID),1,0)
+data[2:nrow(data),]$pStageNumFlags<-ifelse((data[2:nrow(data),]$TouchTime<data[1:nrow(data)-1,]$TouchTime),1,0)
+data$pStageNums<-cumsum(data$pStageNumFlags)
+data$pStage<- data$pStageNums-(data$UserID-1)*3
 
 # Bianca's comment: Point (0,0) is the lower left corner with landscape orientation.
 # All presses on the black menu bar is logged as any other position on the touch screen. 
