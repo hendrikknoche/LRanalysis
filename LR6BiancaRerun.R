@@ -129,7 +129,7 @@ data$GoalYcoded<-ifelse(data$Goal == "S",-1,ifelse(data$Goal == "N",1,0))
 data$CrossTargetCoded<-ifelse(data$CrossTargets == "True",1,0)
 data$fromIpsilateral<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,0)
 data$toIpsilateral<-ifelse(data$GoalXcoded==data$DominantHandCoded,1,0)
-
+data$ipsiContra<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,-1)
 data$slideX<-data$LiftOffsetX-data$TouchOffsetX
 data$slideY<-data$LiftOffsetY-data$TouchOffsetY
 
@@ -145,8 +145,9 @@ summary(step(fit))
 
 
 ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = Outset))+geom_point(alpha=.3)+facet_grid(.~UserID)
+ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHandCoded))+geom_point(alpha=.3)
 
-fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded*toIpsilateral+CrossTargetCoded+TargetSize+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded+CrossTargetCoded+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)
 step(fit)
 summary(step(fit))
