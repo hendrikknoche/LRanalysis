@@ -9,7 +9,11 @@ library(plyr)
 library(lsmeans)
 library(sqldf)
 ### === data import from either accesss or mysql ======================
-myconn <-odbcConnect("CreateServer", uid="hknoche", pwd="safeS7epruru")
+libloc= Sys.getenv("R_LIBS_USER")
+### === data import from mysql - make sure the config.R file exists and has all information user/pass/dbname/serverIP =======================
+source(paste(libloc,"//config.R",sep=''))
+
+myconn <-odbcConnect("CreateServer", uid=ODBCUID, pwd=pass)
 
 WAMS42cent  <-sqlQuery(myconn, "select * from ana_WAM_log where studyNumber in (2,4) and hitOutcome>0 and hitTypeID in (4)")
 WAMS42targ  <- sqlQuery(myconn, "select * from ana_WAM_log where studyNumber in (2,4) and hitOutcome>0 and hitTypeID in (0,1,2)")

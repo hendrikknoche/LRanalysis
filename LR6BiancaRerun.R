@@ -1,13 +1,24 @@
 options(install.lock = FALSE) 
 # lib ---------------------------------------------------------------------
 libloc= Sys.getenv("R_LIBS_USER")
-.libPaths("C:/Users/kh/kh - Lokal/R/win-library/3.2")
+#.libPaths("C:/Users/kh/kh - Lokal/R/win-library/3.2")
+
+#details about the protoype -----
+
+
+simple_roc <- function(labels, scores){
+  labels <- labels[order(scores, decreasing=TRUE)]
+  data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
+}
+
 
 library(ggplot2)
 library(Rmisc)
 library(ROCR)
 library(dplyr)
 library(readxl)
+library(sqldf)
+library(pROC)
 Handedness_Responses_Form_responses_1 <- read_excel("~/git/AAU/LRanalysis/data/Handedness (Responses) - Form responses 1.xlsx")
 # , 
 #                                                     +     col_types = c("date", "numeric", "text", 
@@ -53,6 +64,8 @@ data[2:nrow(data),]$pStageNumFlags<-ifelse((data[2:nrow(data),]$TouchTime<data[1
 data$pStageNums<-cumsum(data$pStageNumFlags)
 data$pStage<- data$pStageNums-(data$UserID-1)*3
 
+debug<-sqldf("select userID, targetSize, DominantHand, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize")
+ggplot(debug,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.3)+theme_bw()+facet_grid(.~UserID)
 # Bianca's comment: Point (0,0) is the lower left corner with landscape orientation.
 # All presses on the black menu bar is logged as any other position on the touch screen. 
 # The target objects are centred on the white background, meaning that a target object has the same distance to the edge of the display as the menu bar. 
@@ -157,8 +170,20 @@ summary(fit)
 step(fit)
 summary(step(fit))
 
+fitH<-lm(DominantHandCoded~ TouchOffsetX*OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+summary(step(fitH))
+predict(fitH,data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),])
+data$predictScore<-NA
+data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]$predictScore<-predict(fitH,data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]) 
+datapredicted
+simple_roc(data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]$DominantHandCoded,data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]$predicted)
 
-fit <- lm(TouchOffsetY ~ OutsetYcoded+GoalYcoded+CrossTargetCoded+TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & & data$MistakeOccured == "No"),])
+fity <- lm(TouchOffsetY ~ OutsetYcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalYcoded+CrossTargetCoded+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+summary(fity)
+step(fity)
+summary(step(fity))
+
+fit <- lm(TouchOffsetY ~ OutsetYcoded+GoalYcoded+CrossTargetCoded+TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 step(fit)
 
 fit <- lm(slideX ~ OutsetXcoded+OutsetYcoded+GoalXcoded+GoalYcoded+CrossTargetCoded+TargetSize+DominantHandCoded+GoalXcoded*DominantHandCoded+OutsetXcoded*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])

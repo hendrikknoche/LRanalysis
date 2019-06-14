@@ -10,8 +10,12 @@ library(Rmisc)
 library(ggplot2)
 
 # import data LR12
-myconn <-odbcConnect("accdb BNC", uid="", pwd="")
-myconn <-odbcConnect("CreateServer", uid="hknoche", pwd="safeS7epruru")
+### === data import from either accesss or mysql ======================
+libloc= Sys.getenv("R_LIBS_USER")
+### === data import from mysql - make sure the config.R file exists and has all information user/pass/dbname/serverIP =======================
+source(paste(libloc,"//config.R",sep=''))
+
+myconn <-odbcConnect("CreateServer", uid=ODBCUID, pwd=pass)
 
 LR12 <-sqlQuery(myconn, "select * from ana_LR12_data_byTBLR  ")
 LR12cent<-LR12[LR12$HitType=="Center",]

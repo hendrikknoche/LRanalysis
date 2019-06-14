@@ -8,9 +8,12 @@ library("plyr", lib.loc="\\\\Mac/Home/Documents/R/win-library/3.2")
 library("ggplot2", lib.loc="\\\\Mac/Home/Documents/R/win-library/3.2")
 library("grid", lib.loc="C:/Program Files/R/R-3.2.2/library")
 library(ggplot2)
-### === data import from either accesss or mysql =======================
-myconn <-odbcConnect("accdb BNC", uid="", pwd="")
-myconn <-odbcConnect("CreateServer", uid="hknoche", pwd="safeS7epruru")
+### === data import from either accesss or mysql ======================
+libloc= Sys.getenv("R_LIBS_USER")
+### === data import from mysql - make sure the config.R file exists and has all information user/pass/dbname/serverIP =======================
+source(paste(libloc,"//config.R",sep=''))
+
+myconn <-odbcConnect("CreateServer", uid=ODBCUID, pwd=pass)
 
 WAMS42cent  <-sqlQuery(myconn, "select * from ana_WAM_log where studyNumber in (2,4) and hitOutcome>0 and hitTypeID in (4)")
 WAMS42targ  <- sqlQuery(myconn, "select * from ana_WAM_log where studyNumber in (2,4) and hitOutcome>0 and hitTypeID in (0,1,2)")
