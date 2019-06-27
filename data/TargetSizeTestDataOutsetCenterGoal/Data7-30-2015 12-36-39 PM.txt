@@ -1,2 +1,0 @@
-UserID;Age;Gender;DominantHand;HitType;TargetID;RoundID;TouchTime;LiftTime;DeltaHitTime;TargetX;TargetY;TouchX;TouchY;LiftX;LiftY;TouchOffsetX;TouchOffsetY;LiftOffsetX;LiftOffsetY;TouchDuration;TouchDeltaX;TouchDeltaY
-0;25;M;R;Center;-1;0;0.6234207;0.690815;0.6234207;189.4096;138.6581;189.275;135.6964;189.5442;135.6964;-0.1346283;-2.961639;0.134613;-2.961639;0.06739426;0.2692413;0
