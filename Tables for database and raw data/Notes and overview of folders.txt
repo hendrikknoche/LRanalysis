@@ -1,0 +1,3 @@
+Each table in the database is also here in it's own folder, togeter with the raw data from each study.
+
+The .R file is an example of the code used to merge the raw data togeter to one file. 
