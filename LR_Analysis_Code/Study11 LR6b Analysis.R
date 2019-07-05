@@ -16,7 +16,7 @@ source(file.path(Sys.getenv("HOME"),"config.R"))
 
 
 # Connect to the database 
-mydb = dbConnect(MySQL(), user=ODBCUID, password=pass, dbname="touchStudies", host="192.38.56.104")
+mydb = dbConnect(MySQL(), user=LAuserID, password=LAuserpass, dbname="touchStudies", host="192.38.56.104")
 
 # Save the data from Handedness in the variable Handedness_Data
 rs<-dbSendQuery(mydb, "SELECT * FROM Handedness")
