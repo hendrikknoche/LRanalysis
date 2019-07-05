@@ -12,8 +12,8 @@ library(readxl)
 library(sqldf)
 library(pROC)
 library(RMySQL)
+source(file.path(Sys.getenv("HOME"),"config.R"))
 
-source("config.R")
 
 # Connect to the database 
 mydb = dbConnect(MySQL(), user=ODBCUID, password=pass, dbname="touchStudies", host="192.38.56.104")
