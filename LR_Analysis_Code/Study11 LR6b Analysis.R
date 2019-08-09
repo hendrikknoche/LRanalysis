@@ -1,8 +1,8 @@
+# Input the StudyID of the data that you want to work on
+Study <- '11'
+
 #Makes sure installations are not locked (which is the default setting)
 options(install.lock = FALSE) 
-
-# lib ---------------------------------------------------------------------
-libloc= Sys.getenv("R_LIBS_USER")
 
 library(ggplot2)
 library(Rmisc)
@@ -30,7 +30,7 @@ touchEvents_Data<- fetch(rs, n=-1);dbClearResult(dbListResults(mydb)[[1]])
 rs<-dbSendQuery(mydb, "SELECT * FROM touchEvents")
 touchEventsTemporal_Data<- fetch(rs, n=-1);dbClearResult(dbListResults(mydb)[[1]])
 
-#Display the data from the database (just for test)
+#Display the data from the database (just for testing)
 #View(Handedness_Data)
 #View(touchEvents_Data)
 #View(touchEventsTemporal_Data)
@@ -41,15 +41,17 @@ simple_roc <- function(labels, scores){
   data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
 }
 
-#data = touchEvents
-#touchData = touchEventsTemporal_Data
-
+#In the original code the touchEvent_Data was saved as data, which i feel isn't that telling a name, but from this point on data = touchEvents_Data
 data <- data.frame()
-
 data <- touchEvents_Data
-touchData <- touchEventsTemporal_Data
+data <- data[data$StudyID == Study,]# Make sure that the data is only from study you want to work on
 
-LR6participants<-distinct(data[,c("UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
+#In the original code the touchEventTemporal_Data was saved as touchData, which is better but not that telling a name, from this point on touchData = touchEventsTemporal_Data
+touchData <- data.frame()
+touchData <- touchEventsTemporal_Data
+touchData <- touchData[touchData$StudyID == Study,]# Make sure that the data is only from study you want to work on
+
+LR6participants<-distinct(data[,c("StudyID","UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
 data$pStageNumFlags<-NA
 data[1,]$pStageNumFlags<-1
 data[2:nrow(data),]$pStageNumFlags<-ifelse(!(data[2:nrow(data),]$UserID==data[1:nrow(data)-1,]$UserID),1,0)
