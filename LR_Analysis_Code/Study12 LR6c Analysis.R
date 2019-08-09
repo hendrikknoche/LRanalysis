@@ -16,7 +16,7 @@ library(RMySQL)
 source(file.path(Sys.getenv("HOME"),"config.R"))
 
 # Connect to the database 
-mydb = dbConnect(MySQL(), user=LRuserID, password=LRuserpass, dbname="touchStudies", host="192.38.56.104")
+mydb = dbConnect(MySQL(), user=LAuserID, password=LAuserpass, dbname="touchStudies", host="192.38.56.104")
 
 # Save the data from Handedness in the variable Handedness_Data
 rs<-dbSendQuery(mydb, "SELECT * FROM Handedness")
@@ -45,6 +45,10 @@ simple_roc <- function(labels, scores){
 data <- data.frame()
 data <- touchEvents_Data
 data <- data[data$StudyID == Study,]# Make sure that the data is only from study you want to work on
+#dirty repair for small data entry error
+data[data$TargetSize==8,]$TargetSize <-7
+data[data$CrossTargets=="True",]$TargetSize <- 1
+data$TargetSize<-factor(data$TargetSize)
 
 #In the original code the touchEventTemporal_Data was saved as touchData, which is better but not that telling a name, from this point on touchData = touchEventsTemporal_Data
 touchData <- data.frame()
@@ -60,8 +64,12 @@ data$pStageNums<-cumsum(data$pStageNumFlags)
 data$pStage<- data$pStageNums-(data$UserID-1)*3
 
 options(sqldf.driver = "SQLite")
-debug<-sqldf("select userID, targetSize, DominantHand, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize")
-ggplot(debug,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.3)+theme_bw()+facet_grid(.~UserID)
+debug<-sqldf("select userID, targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
+ggplot(debug,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(Position~UserID)
+
+debugMF<-sqldf("select targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
+ggplot(debugMF,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(~Position)
+
 # Bianca's comment: Point (0,0) is the lower left corner with landscape orientation.
 # All presses on the black menu bar is logged as any other position on the touch screen. 
 # The target objects are centred on the white background, meaning that a target object has the same distance to the edge of the display as the menu bar. 
