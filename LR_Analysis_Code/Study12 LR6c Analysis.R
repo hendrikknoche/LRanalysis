@@ -32,7 +32,7 @@ touchEventsTemporal_Data<- fetch(rs, n=-1);dbClearResult(dbListResults(mydb)[[1]
 
 #Display the data from the database (just for testing)
 #View(Handedness_Data)
-View(touchEvents_Data)
+#View(touchEvents_Data)
 #View(touchEventsTemporal_Data)
 
 #details about the protoype ----- (not sure what this code does)
@@ -64,11 +64,71 @@ data$pStageNums<-cumsum(data$pStageNumFlags)
 data$pStage<- data$pStageNums-(data$UserID-1)*3
 
 options(sqldf.driver = "SQLite")
+
+
+#Total avg of the offset, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
 debug<-sqldf("select userID, targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
 ggplot(debug,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(Position~UserID)
 
+#Total avg of the offset, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
 debugMF<-sqldf("select targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
 ggplot(debugMF,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(~Position)
+
+#Rotate data
+data$tempTargetX<-data$TargetY
+data$tempTargetY<-data$TargetX
+data$TargetX<-data$tempTargetX
+data$TargetY<-data$tempTargetY
+data$tempTargetX<-NULL
+data$tempTargetY<-NULL
+
+data$tempLiftX<-data$LiftY
+data$tempLiftY<-data$LiftX
+data$LiftX<-data$tempTargetX
+data$LiftY<-data$tempLiftY
+data$tempLiftX<-NULL
+data$tempLiftY<-NULL
+
+data$tempTouchOffsetX<--data$TouchOffsetY
+data$tempTouchOffsetY<-data$TouchOffsetX
+data$TouchOffsetX<-data$tempTouchOffsetX
+data$TouchOffsetY<-data$tempTouchOffsetY
+data$tempTouchOffsetX<-NULL
+data$tempTouchOffsetY<-NULL
+
+data$tempLiftOffsetX<-data$LiftOffsetY
+data$tempLiftOffsetY<-data$LiftOffsetX
+data$LiftOffsetX<-data$tempLiftOffsetX
+data$LiftOffsetY<-data$tempLiftOffsetY
+data$tempLiftOffsetX<-NULL
+data$tempLiftffsetY<-NULL
+
+data$tempOutset[data$Outset == "N"]<-"W"
+data$tempOutset[data$Outset == "S"]<-"E"
+data$tempOutset[data$Outset == "E"]<-"N"
+data$tempOutset[data$Outset == "W"]<-"S"
+data$Outset<-data$tempOutset
+data$tempOutset<-NULL
+
+data$tempGoal[data$Goal == "N"]<-"W"
+data$tempGoal[data$Goal == "S"]<-"E"
+data$tempGoal[data$Goal == "E"]<-"N"
+data$tempGoal[data$Goal == "W"]<-"S"
+data$Goal<-data$tempGoal
+data$tempGoal<-NULL
+
+#Total avg of the offset after turning the data, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
+debugTI<-sqldf("select targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
+ggplot(debugTI,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(~Position)
+
+#Total avg of the offset after turning the data, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
+debugTA<-sqldf("select userID, targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
+ggplot(debugTA,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(Position~UserID)
+
+
+# Made no changes to the code below this point ----------------------------------------------------------------------------------------------------
+
+
 
 # Bianca's comment: Point (0,0) is the lower left corner with landscape orientation.
 # All presses on the black menu bar is logged as any other position on the touch screen. 
