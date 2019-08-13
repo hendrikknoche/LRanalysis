@@ -12,6 +12,7 @@ library(readxl)
 library(sqldf)
 library(pROC)
 library(RMySQL)
+library(stringi)
 
 source(file.path(Sys.getenv("HOME"),"config.R"))
 
@@ -30,11 +31,6 @@ touchEvents_Data<- fetch(rs, n=-1);dbClearResult(dbListResults(mydb)[[1]])
 rs<-dbSendQuery(mydb, "SELECT * FROM touchEventsTemporal")
 touchEventsTemporal_Data<- fetch(rs, n=-1);dbClearResult(dbListResults(mydb)[[1]])
 
-#Display the data from the database (just for testing)
-#View(Handedness_Data)
-#View(touchEvents_Data)
-#View(touchEventsTemporal_Data)
-
 #details about the protoype ----- (not sure what this code does)
 simple_roc <- function(labels, scores){
   labels <- labels[order(scores, decreasing=TRUE)]
@@ -44,17 +40,19 @@ simple_roc <- function(labels, scores){
 #In the original code the touchEvent_Data was saved as data, which i feel isn't that telling a name, but from this point on data = touchEvents_Data
 data <- data.frame()
 data <- touchEvents_Data
-data <- data[data$StudyID == Study,]# Make sure that the data is only from study you want to work on
+data <- data[data$StudyID == Study,]# Make sure that the data is only from the study you want to work on
+
 #dirty repair for small data entry error
 data[data$TargetSize==8,]$TargetSize <-7
 data[data$CrossTargets=="True",]$TargetSize <- 1
 data$TargetSize<-factor(data$TargetSize)
 
-#In the original code the touchEventTemporal_Data was saved as touchData, which is better but not that telling a name, from this point on touchData = touchEventsTemporal_Data
+#In the original code the touchEventTemporal_Data was saved as touchData, which is better, but not that telling a name, from this point on touchData = touchEventsTemporal_Data
 touchData <- data.frame()
 touchData <- touchEventsTemporal_Data
 touchData <- touchData[touchData$StudyID == Study,]# Make sure that the data is only from study you want to work on
 
+#User information --- (not sure what we use it for, might delete)
 LR6participants<-distinct(data[,c("StudyID","UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
 data$pStageNumFlags<-NA
 data[1,]$pStageNumFlags<-1
@@ -63,8 +61,8 @@ data[2:nrow(data),]$pStageNumFlags<-ifelse((data[2:nrow(data),]$TouchTime<data[1
 data$pStageNums<-cumsum(data$pStageNumFlags)
 data$pStage<- data$pStageNums-(data$UserID-1)*3
 
+#Driver
 options(sqldf.driver = "SQLite")
-
 
 #Total avg of the offset, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
 debug<-sqldf("select userID, targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
@@ -74,14 +72,16 @@ ggplot(debug,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=Domina
 debugMF<-sqldf("select targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
 ggplot(debugMF,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color = DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(~Position)
 
-#Rotate data 90degree. ONLY RUN THIS CODE ONCE OR IT WILL ROTATE THE DATA TO MUCH!
-data$tempTargetX<-data$TargetY
+#ONLY RUN THIS CODE ONCE OR IT WILL ROTATE THE DATA TO MUCH!
+#Rotate target 90 degree
+data$tempTargetX<-data$TargetY 
 data$tempTargetY<-data$TargetX
 data$TargetX<-data$tempTargetX*-1
 data$TargetY<-data$tempTargetY*-1
 data$tempTargetX<-NULL
 data$tempTargetY<-NULL
 
+#Rotate lift off 90 degree
 data$tempLiftX<-data$LiftY
 data$tempLiftY<-data$LiftX
 data$LiftX<-data$tempLiftX*-1
@@ -89,6 +89,7 @@ data$LiftY<-data$tempLiftY*-1
 data$tempLiftX<-NULL
 data$tempLiftY<-NULL
 
+#Rotate touch down 90 degree
 data$tempTouchOffsetX<--data$TouchOffsetY
 data$tempTouchOffsetY<-data$TouchOffsetX
 data$TouchOffsetX<-data$tempTouchOffsetX*-1
@@ -96,6 +97,7 @@ data$TouchOffsetY<-data$tempTouchOffsetY*-1
 data$tempTouchOffsetX<-NULL
 data$tempTouchOffsetY<-NULL
 
+#Rotate the offset between the touch and lift 90 degree
 data$tempLiftOffsetX<-data$LiftOffsetY
 data$tempLiftOffsetY<-data$LiftOffsetX
 data$LiftOffsetX<-data$tempLiftOffsetX*-1
@@ -103,6 +105,7 @@ data$LiftOffsetY<-data$tempLiftOffsetY*-1
 data$tempLiftOffsetX<-NULL
 data$tempLiftffsetY<-NULL
 
+#Rotate the outset (where you are comming from) 90 degree
 data$tempOutset[data$Outset == "N"]<-"E"
 data$tempOutset[data$Outset == "S"]<-"W"
 data$tempOutset[data$Outset == "E"]<-"S"
@@ -110,6 +113,7 @@ data$tempOutset[data$Outset == "W"]<-"N"
 data$Outset<-data$tempOutset
 data$tempOutset<-NULL
 
+#Rotate the goal (where you are going) 90 degree
 data$tempGoal[data$Goal == "N"]<-"E"
 data$tempGoal[data$Goal == "S"]<-"W"
 data$tempGoal[data$Goal == "E"]<-"S"
@@ -136,22 +140,121 @@ ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),
 #Each touch based on the input direction.
 ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+facet_grid(Outset~UserID)
 
-
+#Tried to show the avg based on the direction, however it is not working
 debugDirection<-sqldf("select userID, targetSize, Outset, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX, avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' and MistakeOccured = 'No' group by userID, DominantHand, TargetSize, Position, Outset")
-ggplot(debugDirection,aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+facet_grid(Outset~Position)
+ggplot(debugDirection,aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+theme_bw()+facet_grid(Outset~Position)
 
+#------------------ the code above works, the one below is a bit more questional -----------------------
+
+#The following code is the set up from study 8-9 I'm just trying to see if we can use it
+#Save the UserID in anoter veriable
+data$PID<-data$UserID 
+
+#Check if playing hand is the dominant hand. Not sure we need this since people only used their dominant hand in this study.
+data$isDomHand <-ifelse(stri_length(data$PlayingHand)>1,0,1)  
+data$inputHand <- ifelse(stri_length(data$PlayingHand)<2,substr(data$PlayingHand,1,1),ifelse(substr(data$PlayingHand,1,1)=='L','R','L'))
+parti<-sqldf("select distinct studyID, PID,inputHand as Handed, age, gender, DominantEye from data where isDomHand=1 ")
+data$DominantEyenew<-ifelse(stri_length(data$DominantEye)==1 & data$StudyID == 12, ifelse(substr(data$DominantEye,1,1)=="L","LLL","RRR") ,substr(data$DominantEye,1,3))
+data<-merge(data, parti[,1:3], by = c("StudyID","PID"))
+
+#Check previous and next User
+data$prevPID<-c(-1,data$PID[1:nrow(data)-1])
+data$nextPID<-c(data$PID[2:nrow(data)],-1)
+
+#Check previous and next touch 
+data$prevTouchX<-ifelse(data$prevPID==data$PID,1,NA)*c(-1,data$TouchX[1:nrow(data)-1])
+data$prevTouchY<-ifelse(data$prevPID==data$PID,1,NA)*c(-1,data$TouchY[1:nrow(data)-1])
+
+#Check previous lift time
+data$prevLiftTime<-ifelse(data$prevPID==data$PID,1,NA)*c(-1,data$LiftTime[1:nrow(data)-1])
+
+#Calculate the movement time, which is touch time minuse previous lift time
+data$moveTime<-ifelse(data$HitType!="Outset",1,NA)*(data$TouchTime-data$prevLiftTime)
+
+#Check if the next touch was an error
+data$nextTouchIsError<-c(ifelse(data$HitType[2:nrow(data)]=="Miss"|data$HitType[2:nrow(data)]=="WrongTarget"|!(data$nextPID[2:nrow(data)]==data$PID[2:nrow(data)]),TRUE,FALSE), NA)
+
+#Get the x and y possition of the next target
+data$nextXpos<-ifelse(data$nextPID==data$PID & !(data$nextTouchIsError),1,NA)*c(data$TargetX[2:nrow(data)],-1)
+data$nextYpos<-ifelse(data$nextPID==data$PID & !(data$nextTouchIsError),1,NA)*c(data$TargetY[2:nrow(data)],-1)
+
+#Calculate a vector from the previous position to to the current. 
+data$inVectorX<- data$TouchX - data$prevTouchX
+data$inVectorY<- data$TouchY - data$prevTouchY
+
+#Calculate a vector from the current position to to the next.
+data$outVectorX<- data$nextXpos - data$TouchX
+data$outVectorY<- data$nextYpos - data$TouchY
+
+#Calculate the distance form the previous target to the current and then calculate the distance to the next target
+data$prevTargDist<-sqrt(data$inVectorX^2+data$inVectorY^2)
+data$nextTargDist<- sqrt(data$outVectorX^2+data$outVectorY^2)
+
+#Calculate the movement speed, by deviding previous target distance whti the movetime. 
+data$moveSpeed<-data$prevTargDist/data$moveTime
+
+#Not sure what we learn from this code. 
+data$inSlideDiffDeg<- (atan2(data$TouchDeltaY,data$TouchDeltaX)-atan2(data$inVectorY,data$inVectorX))*180/pi
+data$slideOutDiffDeg<- (atan2(data$outVectorY,data$outVectorX)-atan2(data$TouchDeltaY,data$TouchDeltaX))*180/pi
+data$slideDist<-sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2)  
+data$inSlideDiffDegX<-cos(data$inSlideDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2)  
+data$inSlideDiffDegY<-sin(data$inSlideDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2) 
+data$slideOutDiffDegX<-cos(data$slideOutDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2) 
+data$slideOutDiffDegY<-sin(data$slideOutDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2) 
+
+#Convert the R or L hand in to binary numbers (1 or -1)
+data$inputHandBinary <- ifelse(data$inputHand=="R",1,-1)
+
+#Finding out where the user is comming from
+data$ApproachFromLR <-ifelse(data$TargetDistance<0,-1,1)
+data$ApproachFromLR <-ifelse(data$StudyID==12,ifelse(data$inVectorX<0,-1,1),data$ApproachFromLR)
+data$ApproachFromLRsideFactor <-ifelse(data$ApproachFromLR<0,"from R" ,"from L")
+
+#Finding where the user is going. 
+data$headingIntoDir<-ifelse(data$outVectorX<0,-1,1)
+data$headingIntoDirFactor <-ifelse(data$headingIntoDir<0,"Heading Left" ,"Heading Right")
+
+#Set gender eye offset
+data$GenderEyeOffSet<-ifelse(data$Gender=="M",32,31)
+
+#Convert long nails to binary Yes = 1 and No = 0
+data$LongNailsBinary<-ifelse(data$LongNails=="Yes",1,0) | ifelse(data$LongNails=="yes",1,0)
+
+data$YfromBottom<-data$TargetY-min(data$TargetY)
+
+#Remove outliers
+isMADoutlier <- function(x) {
+  abs(x - median(x,na.rm=TRUE)) > 4*mad(x,na.rm=TRUE)
+}
+data$offsetOutlier<-isMADoutlier(data$TouchOffsetX) |   isMADoutlier(data$TouchOffsetY|isMADoutlier(data$TouchDeltaX)|isMADoutlier(data$TouchDeltaY))
+data<-data[!data$offsetOutlier,]
+
+
+data$slideDeg<-atan2(data$TouchDeltaY,data$TouchDeltaX)*(180/pi)
+data$touchDeg<-atan2(data$TouchY,data$TouchX)*(180/pi)
+data$inDeg<-atan2(data$inVectorY,data$inVectorX)*(180/pi)
+data$outDeg<-atan2(data$outVectorY,data$outVectorX)*(180/pi)
+
+
+data$XoffCenter<-data$TargetX-(round((max(data$TargetX)-min(data$TargetX))/2,0)+min(data$TargetX))
+data$YoffCenter<-data$TargetY-(round((max(data$TargetY)-min(data$TargetY))/2,0)+min(data$TargetY))
+
+data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
 
 #Fix parallax 
+data$DominantEyenew<-ifelse(stri_length(data$DominantEye)==1 & data$studyID == 12, ifelse(substr(data$DominantEye,1,1)=="L","LLL","RRR") ,substr(data$DominantEye,1,3))
+
+
 data$eyeHelper <- ifelse(data$XoffCenter < -37,1,ifelse(data$XoffCenter < 38,2,3))
 data$EyeUsed <- substr(data$DominantEyenew,data$eyeHelper,data$eyeHelper)
 data$EyeBinary <- ifelse(data$EyeUsed=="R",1,-1)
 data$inputHandBinary <- ifelse(data$inputHand=="R",1,-1)
-data$GenderEyeOffSet<-ifelse(data$Gender=="M",32,31)
-data$Xparallax <- (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)/55*54.83 - (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)
+data$GenderEyeOffSet <- ifelse(data$Gender=="M",32,31)
+data$YfromBottom <- data$TargetY-min(data$TargetY)
 data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
+data$Xparallax <- (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)/55*54.83 - (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)
 
 data$TargetCombination<-paste(data$Outset,data$Goal,sep = "")
-
 
 data$DominantHandCoded<-ifelse(data$DominantHand == "L",-1,1)
 data$OutsetXcoded<-ifelse(data$Outset == "W",-1,ifelse(data$Outset == "E",1,0))
