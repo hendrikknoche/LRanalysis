@@ -242,9 +242,7 @@ data$YoffCenter<-data$TargetY-(round((max(data$TargetY)-min(data$TargetY))/2,0)+
 data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
 
 #Fix parallax 
-data$DominantEyenew<-ifelse(stri_length(data$DominantEye)==1 & data$studyID == 12, ifelse(substr(data$DominantEye,1,1)=="L","LLL","RRR") ,substr(data$DominantEye,1,3))
-
-
+data$DominantEyenew<-ifelse(stri_length(data$DominantEye)==1, ifelse(substr(data$DominantEye,1,1)=="L","LLL","RRR") ,substr(data$DominantEye,1,3))
 data$eyeHelper <- ifelse(data$XoffCenter < -37,1,ifelse(data$XoffCenter < 38,2,3))
 data$EyeUsed <- substr(data$DominantEyenew,data$eyeHelper,data$eyeHelper)
 data$EyeBinary <- ifelse(data$EyeUsed=="R",1,-1)
@@ -253,6 +251,9 @@ data$GenderEyeOffSet <- ifelse(data$Gender=="M",32,31)
 data$YfromBottom <- data$TargetY-min(data$TargetY)
 data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
 data$Xparallax <- (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)/55*54.83 - (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)
+
+
+#-------- Below from study 11 ------------------
 
 data$TargetCombination<-paste(data$Outset,data$Goal,sep = "")
 
