@@ -1,7 +1,12 @@
+### In this R code we are analysing the results from Study 12 LR6c 
+### The code has been splidt up into differents parts 
+
+#------------------------- Part 1: Installing the library and getting the data from the server --------------------
+
 # Input the StudyID of the data that you want to work on
 Study <- '12'
 
-#Makes sure installations are not locked (which is the default setting)
+# Makes sure installations are not locked (which is the default setting)
 options(install.lock = FALSE) 
 
 library(ggplot2)
@@ -20,8 +25,8 @@ source(file.path(Sys.getenv("HOME"),"config.R"))
 mydb = dbConnect(MySQL(), user=LAuserID, password=LAuserpass, dbname="touchStudies", host="192.38.56.104")
 
 # Save the data from Handedness in the variable Handedness_Data
-rs<-dbSendQuery(mydb, "SELECT * FROM Handedness")
-Handedness_Data<- fetch(rs, n=-1);dbClearResult(dbListResults(mydb)[[1]])
+#rs<-dbSendQuery(mydb, "SELECT * FROM Handedness")
+#Handedness_Data<- fetch(rs, n=-1);dbClearResult(dbListResults(mydb)[[1]])
 
 # Save the data from touchEvents in the variable touchEvents_Data
 rs<-dbSendQuery(mydb, "SELECT * FROM touchEvents WHERE StudyID = 12")
@@ -37,20 +42,28 @@ simple_roc <- function(labels, scores){
   data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
 }
 
+#Driver
+options(sqldf.driver = "SQLite")
+
+#----------------------------Part 2: Analyse touchEvent data.------------------------------------------------------
+
+#----------------------------Part 2.1: Preparing the data ---------------------------------------------------------
+
 #In the original code the touchEvent_Data was saved as data, which i feel isn't that telling a name, but from this point on data = touchEvents_Data
 data <- data.frame()
 data <- touchEvents_Data
 data <- data[data$StudyID == Study,]# Make sure that the data is only from the study you want to work on
+
+#In the original code the touchEventTemporal_Data was saved as touchData, which is better, but not that telling a name, from this point on touchData = touchEventsTemporal_Data
+touchData <- data.frame()
+touchData <- touchEventsTemporal_Data
+touchData <- touchData[touchData$StudyID == Study,]# Make sure that the data is only from study you want to work on
 
 #dirty repair for small data entry error
 data[data$TargetSize==8,]$TargetSize <-7
 data[data$CrossTargets=="True",]$TargetSize <- 1
 data$TargetSize<-factor(data$TargetSize)
 
-#In the original code the touchEventTemporal_Data was saved as touchData, which is better, but not that telling a name, from this point on touchData = touchEventsTemporal_Data
-touchData <- data.frame()
-touchData <- touchEventsTemporal_Data
-touchData <- touchData[touchData$StudyID == Study,]# Make sure that the data is only from study you want to work on
 
 #User information --- (not sure what we use it for, might delete)
 LR6participants<-distinct(data[,c("StudyID","UserID","Age","Gender","DominantEye","LongNails","DominantHand")])
@@ -61,16 +74,16 @@ data[2:nrow(data),]$pStageNumFlags<-ifelse((data[2:nrow(data),]$TouchTime<data[1
 data$pStageNums<-cumsum(data$pStageNumFlags)
 data$pStage<- data$pStageNums-(data$UserID-1)*3
 
-#Driver
-options(sqldf.driver = "SQLite")
+### The Following two plots shows the raw data as it get in. 
+### They shows that the data is twisted, thus, we need rotate the data 90 degree. 
 
 #Total avg of the offset, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
-debug<-sqldf("select userID, targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
-ggplot(debug,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(Position~UserID)
+debugRawData<-sqldf("select userID, targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
+ggplot(debugRawData,aes(x = TouchOffsetX, y = TouchOffsetY,size=TargetSize,color=DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(Position~UserID)
 
 #Total avg of the offset, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
-debugMF<-sqldf("select targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
-ggplot(debugMF,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color = DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(~Position)
+debugRawTotal<-sqldf("select targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX,avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
+ggplot(debugRawTotal,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color = DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(~Position)
 
 #ONLY RUN THIS CODE ONCE OR IT WILL ROTATE THE DATA TO MUCH!
 #Rotate target 90 degree
@@ -121,6 +134,8 @@ data$tempGoal[data$Goal == "W"]<-"N"
 data$Goal<-data$tempGoal
 data$tempGoal<-NULL
 
+### The two following plots show that the data has been rotated. 
+
 #Total avg of the offset after turning the data, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
 debugTA<-sqldf("select targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX, avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
 ggplot(debugTA,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color = DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(~Position)
@@ -129,25 +144,13 @@ ggplot(debugTA,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color 
 debugTI<-sqldf("select userID, targetSize, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX, avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
 ggplot(debugTI,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color = DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(Position~UserID)
 
-#Total avg of the offset after turning the data, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
-debugSD<-sqldf("select targetSize, DominantHand, Position, stdev(TouchOffsetX) as TouchOffsetX, stdev(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
-ggplot(debugSD,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color = DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(TargetSize~Position)
-
-#Each touch by the Individual user of the offset after turning the data, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
+#Instead of the avg this shows each touch by the Individual user, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
 debugPoint<-sqldf("select userID, targetSize, DominantHand, Position, TouchOffsetX, TouchOffsetY from data where HitType = 'Center' group by userID,DominantHand, TargetSize, Position")
 ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+facet_grid(Position~UserID)
 
-#Each touch based on the input direction.
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+facet_grid(Outset~UserID)
+### After rotating the data the last preparations can be made on the data (most of this is from study 8&9)
 
-#Tried to show the avg based on the direction, however it is not working
-debugDirection<-sqldf("select userID, targetSize, Outset, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX, avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' and MistakeOccured = 'No' group by userID, DominantHand, TargetSize, Position, Outset")
-ggplot(debugDirection,aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+theme_bw()+facet_grid(Outset~Position)
-
-#------------------ the code above works, the one below is a bit more questional -----------------------
-
-#The following code is the set up from study 8-9 I'm just trying to see if we can use it
-#Save the UserID in anoter veriable
+#Save the UserID in anoter variable
 data$PID<-data$UserID 
 
 #Check if playing hand is the dominant hand. Not sure we need this since people only used their dominant hand in this study.
@@ -161,7 +164,7 @@ data<-merge(data, parti[,1:3], by = c("StudyID","PID"))
 data$prevPID<-c(-1,data$PID[1:nrow(data)-1])
 data$nextPID<-c(data$PID[2:nrow(data)],-1)
 
-#Check previous and next touch 
+#Check previous touch 
 data$prevTouchX<-ifelse(data$prevPID==data$PID,1,NA)*c(-1,data$TouchX[1:nrow(data)-1])
 data$prevTouchY<-ifelse(data$prevPID==data$PID,1,NA)*c(-1,data$TouchY[1:nrow(data)-1])
 
@@ -193,14 +196,21 @@ data$nextTargDist<- sqrt(data$outVectorX^2+data$outVectorY^2)
 #Calculate the movement speed, by deviding previous target distance whti the movetime. 
 data$moveSpeed<-data$prevTargDist/data$moveTime
 
-#Not sure what we learn from this code. 
+#The distance of the slide when touching the screen
+data$slideDist<-sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2)  
+
+#The angle of slide (not sure why we want to know this)
 data$inSlideDiffDeg<- (atan2(data$TouchDeltaY,data$TouchDeltaX)-atan2(data$inVectorY,data$inVectorX))*180/pi
 data$slideOutDiffDeg<- (atan2(data$outVectorY,data$outVectorX)-atan2(data$TouchDeltaY,data$TouchDeltaX))*180/pi
-data$slideDist<-sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2)  
 data$inSlideDiffDegX<-cos(data$inSlideDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2)  
 data$inSlideDiffDegY<-sin(data$inSlideDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2) 
 data$slideOutDiffDegX<-cos(data$slideOutDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2) 
 data$slideOutDiffDegY<-sin(data$slideOutDiffDeg*pi/180) * sqrt(data$TouchDeltaX^2+data$TouchDeltaY^2) 
+
+data$slideDeg<-atan2(data$TouchDeltaY,data$TouchDeltaX)*(180/pi)
+data$touchDeg<-atan2(data$TouchY,data$TouchX)*(180/pi)
+data$inDeg<-atan2(data$inVectorY,data$inVectorX)*(180/pi)
+data$outDeg<-atan2(data$outVectorY,data$outVectorX)*(180/pi)
 
 #Convert the R or L hand in to binary numbers (1 or -1)
 data$inputHandBinary <- ifelse(data$inputHand=="R",1,-1)
@@ -220,8 +230,6 @@ data$GenderEyeOffSet<-ifelse(data$Gender=="M",32,31)
 #Convert long nails to binary Yes = 1 and No = 0
 data$LongNailsBinary<-ifelse(data$LongNails=="Yes",1,0) | ifelse(data$LongNails=="yes",1,0)
 
-data$YfromBottom<-data$TargetY-min(data$TargetY)
-
 #Remove outliers
 isMADoutlier <- function(x) {
   abs(x - median(x,na.rm=TRUE)) > 4*mad(x,na.rm=TRUE)
@@ -229,16 +237,11 @@ isMADoutlier <- function(x) {
 data$offsetOutlier<-isMADoutlier(data$TouchOffsetX) |   isMADoutlier(data$TouchOffsetY|isMADoutlier(data$TouchDeltaX)|isMADoutlier(data$TouchDeltaY))
 data<-data[!data$offsetOutlier,]
 
-
-data$slideDeg<-atan2(data$TouchDeltaY,data$TouchDeltaX)*(180/pi)
-data$touchDeg<-atan2(data$TouchY,data$TouchX)*(180/pi)
-data$inDeg<-atan2(data$inVectorY,data$inVectorX)*(180/pi)
-data$outDeg<-atan2(data$outVectorY,data$outVectorX)*(180/pi)
-
-
+#Calculat how much the target is of the center, howere, this is based on the circle game test and should not be nessasary here, however we use it to fix the parallax
 data$XoffCenter<-data$TargetX-(round((max(data$TargetX)-min(data$TargetX))/2,0)+min(data$TargetX))
 data$YoffCenter<-data$TargetY-(round((max(data$TargetY)-min(data$TargetY))/2,0)+min(data$TargetY))
 
+data$YfromBottom<-data$TargetY-min(data$TargetY)
 data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
 
 #Fix parallax 
@@ -252,152 +255,126 @@ data$YfromBottom <- data$TargetY-min(data$TargetY)
 data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
 data$Xparallax <- (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)/55*54.83 - (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)
 
-
-#-------- Below from study 11 ------------------
-
+#Make every single combination of the outset and goal. (code from study 11)
 data$TargetCombination<-paste(data$Outset,data$Goal,sep = "")
 
+#Make the dominant hand binary L = -1 and R = 1
 data$DominantHandCoded<-ifelse(data$DominantHand == "L",-1,1)
+
+#Make the outset binary too in the x and y axis
 data$OutsetXcoded<-ifelse(data$Outset == "W",-1,ifelse(data$Outset == "E",1,0))
 data$OutsetYcoded<-ifelse(data$Outset == "S",-1,ifelse(data$Outset == "N",1,0))
+
+#Make the outset Goal too in the x and y axis
 data$GoalXcoded<-ifelse(data$Goal == "W",-1,ifelse(data$Goal == "E",1,0))
 data$GoalYcoded<-ifelse(data$Goal == "S",-1,ifelse(data$Goal == "N",1,0))
+
+#Make the cross target binary True = 1 and False = 0
 data$CrossTargetCoded<-ifelse(data$CrossTargets == "True",1,0)
+
+#Not sure what ipsi referes to
 data$fromIpsilateral<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,0)
 data$toIpsilateral<-ifelse(data$GoalXcoded==data$DominantHandCoded,1,0)
 data$ipsiContra<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,-1)
+
+#The slide of the touch
 data$slideX<-data$LiftOffsetX-data$TouchOffsetX
 data$slideY<-data$LiftOffsetY-data$TouchOffsetY
 
-
+#Merge all the data together
 mergedData<-merge(data, touchData, by=c("FileID","UserID","TouchID"))
 mergedData<-mergedData[order(c(mergedData$Filedata$Time,mergedData$Time)),]
 
+#------------------------------------ Part 3 Analysing the touchEvent data --------------------------------------------
 
+### To learn more about the data we find the standard deviation. Here we find that the left handed people constantly has bigger deviats, this might be due to the fact that there are fewer left handed participants.
 
-fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+#Standard deviation of the offset, where color = dominant hand (Blue = Right, Red = Left) and size = type of target (1 = Cross, 7 = Small Circle, and 22 = Large Circle), the data is split based on position.
+debugSD<-sqldf("select targetSize, DominantHand, Position, stdev(TouchOffsetX) as TouchOffsetX, stdev(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' group by DominantHand, TargetSize, Position")
+ggplot(debugSD,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color = DominantHand))+ylim(-3, 3)+ xlim(-3, 3)+geom_point(alpha=.8)+theme_bw()+facet_grid(TargetSize~Position)
+
+#Using the function found in marginal_plot.R to show the distrubrution of touches based on the input hand 
+source("marginal_plot.R")
+
+#Scatterplot with marginal of all the touches
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = inputHand, data = data[data$HitType=='Center',], bw = "nrd", 
+              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+
+#Scatterplot with marginal based on the input hand
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = inputHand, data = data[data$HitType=='Center' && data$DominantHand=='R',], bw = "nrd", 
+              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = inputHand, data = data[data$HitType=='Center' && data$DominantHand=='L',], bw = "nrd", 
+              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+
+##Scatterplot with marginal of all the touches, but Left has been mirrored over the the right. 
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center',], bw = "nrd", 
+              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+
+##Scatterplot with marginal based on the inputhand, but Left has been mirrored over the the right. 
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$DominantHand=='R' && data$HitType=='Center',], bw = "nrd", 
+              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' && data$DominantHand=='L',], bw = "nrd", 
+              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+
+### After illusrtating how the data deviates and how the data can be mirrored on to one andother it is time to understand why 
+
+#To see how the different variables effect the outcome of touch offset
+summary(lm(TouchOffsetX ~ OutsetXcoded, data= data[which(data$HitType == "Center" & data$MistakeOccured == "No"), ]))
+summary(lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded, data= data[which(data$HitType == "Center" & data$MistakeOccured == "No"), ]))
+summary(lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded*GoalXcoded, data= data[which(data$HitType == "Center" & data$MistakeOccured == "No"), ]))
+fit <- lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded*GoalXcoded*CrossTargetCoded*TargetSize, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)
 summary(step(fit))
+
+### Based on this summary it is clear that the dominant hand has a significant effect on the data
+
+
+#Each touch based on the input direction.
+ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+facet_grid(Outset~UserID)
+
+#Tried to show the avg based on the direction, however it is not working
+debugDirection<-sqldf("select userID, targetSize, Outset, DominantHand, Position, avg(TouchOffsetX) as TouchOffsetX, avg(TouchOffsetY) as TouchOffsetY from data where HitType = 'Center' and MistakeOccured = 'No' group by userID, DominantHand, TargetSize, Position, Outset")
+ggplot(debugDirection,aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize, shape = DominantHand))+geom_point(alpha=.8)+theme_bw()+facet_grid(Outset~Position)
 
 
 ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = TargetSize))+geom_point(alpha=.3)+facet_grid(Outset~UserID)
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHandCoded))+geom_point(alpha=.3)
+ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = factor(DominantHandCoded)))+geom_point(alpha=.3)
 
-
-# Made no changes to the code below this point ----------------------------------------------------------------------------------------------------
-
-
-
-# Bianca's comment: Point (0,0) is the lower left corner with landscape orientation.
-# All presses on the black menu bar is logged as any other position on the touch screen. 
-# The target objects are centred on the white background, meaning that a target object has the same distance to the edge of the display as the menu bar. 
-#HK comment: about additinoal fields - OutsetXcoded GoalXCoded represent from which side the target is approached (left, -1, right 1)
-MaxX<- 154 # after the rotation this is correct, the 154mm come from the landscape orientation of the device with 0,0 in the upper left corner 
-MaxY<- 90  # after the rotation this is correct, the 90mm come from the landscape orientation of the device with 0,0 in the upper left corner 
-
-data$tempTargetX<-data$TargetY
-data$tempTargetY<-MaxX-data$TargetX
-data$TargetX<-data$tempTargetX
-data$TargetY<-data$tempTargetY
-data$tempTargetX<-NULL
-data$tempTargetY<-NULL
-
-data$tempLiftX<-data$LiftY
-data$tempLiftY<-MaxX-data$LiftX
-data$LiftX<-data$tempTargetX
-data$LiftY<-data$tempLiftY
-data$tempLiftX<-NULL
-data$tempLiftY<-NULL
-
-touchData$tempTouchX<-data$TouchY
-touchData$tempTouchY<-MaxX-touchData$TouchX
-touchData$TouchX<-touchData$tempTouchX
-touchData$TouchY<-touchData$tempTouchY
-touchData$tempTouchX<-NULL
-touchData$tempTouchY<-NULL
-
-touchData$tempFirstTouchX<-touchData$FirstTouchY
-touchData$tempFirstTouchY<-MaxX-touchData$FirstTouchX
-touchData$FirstTouchX<-touchData$tempFirstTouchX
-touchData$FirstTouchY<-touchData$tempFirstTouchY
-touchData$tempFirstTouchX<-NULL
-touchData$tempFirstTouchY<-NULL
-
-data$tempTouchOffsetX<--data$TouchOffsetY
-data$tempTouchOffsetY<-data$TouchOffsetX
-data$TouchOffsetX<-data$tempTouchOffsetX
-data$TouchOffsetY<-data$tempTouchOffsetY
-data$tempTouchOffsetX<-NULL
-data$tempTouchOffsetY<-NULL
-
-data$tempLiftOffsetX<-data$LiftOffsetY
-data$tempLiftOffsetY<-MaxX-data$LiftOffsetX
-data$LiftOffsetX<-data$tempLiftOffsetX
-data$LiftOffsetY<-data$tempLiftOffsetY
-data$tempLiftOffsetX<-NULL
-data$tempLiftffsetY<-NULL
-
-touchData$tempTouchDeltaX<--touchData$TouchDeltaY
-touchData$tempTouchDeltaY<-touchData$TouchDeltaX
-touchData$TouchDeltaX<-touchData$tempTouchDeltaX
-touchData$TouchDeltaY<-touchData$tempTouchDeltaY
-touchData$tempTouchDeltaX<-NULL
-touchData$tempTouchDeltaY<-NULL
-
-data$tempOutset[data$Outset == "N"]<-"E"
-data$tempOutset[data$Outset == "S"]<-"W"
-data$tempOutset[data$Outset == "E"]<-"S"
-data$tempOutset[data$Outset == "W"]<-"N"
-data$Outset<-data$tempOutset
-data$tempOutset<-NULL
-
-data$tempGoal[data$Goal == "N"]<-"E"
-data$tempGoal[data$Goal == "S"]<-"W"
-data$tempGoal[data$Goal == "E"]<-"S"
-data$tempGoal[data$Goal == "W"]<-"N"
-data$Goal<-data$tempGoal
-data$tempGoal<-NULL
-
-data$TargetCombination<-paste(data$Outset,data$Goal,sep = "")
-
-
-data$DominantHandCoded<-ifelse(data$DominantHand == "L",-1,1)
-data$OutsetXcoded<-ifelse(data$Outset == "W",-1,ifelse(data$Outset == "E",1,0))
-data$OutsetYcoded<-ifelse(data$Outset == "S",-1,ifelse(data$Outset == "N",1,0))
-data$GoalXcoded<-ifelse(data$Goal == "W",-1,ifelse(data$Goal == "E",1,0))
-data$GoalYcoded<-ifelse(data$Goal == "S",-1,ifelse(data$Goal == "N",1,0))
-data$CrossTargetCoded<-ifelse(data$CrossTargets == "True",1,0)
-data$fromIpsilateral<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,0)
-data$toIpsilateral<-ifelse(data$GoalXcoded==data$DominantHandCoded,1,0)
-data$ipsiContra<-ifelse(data$OutsetXcoded==data$DominantHandCoded,1,-1)
-data$slideX<-data$LiftOffsetX-data$TouchOffsetX
-data$slideY<-data$LiftOffsetY-data$TouchOffsetY
-
-
-mergedData<-merge(data, touchData, by=c("FileID","UserID","TouchID"))
-mergedData<-mergedData[order(c(mergedData$Filedata$Time,mergedData$Time)),]
-
-
-
-fit <- lm(TouchOffsetX ~ OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize*DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
-summary(fit)
-summary(step(fit))
-
-
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = Outset))+geom_point(alpha=.3)+facet_grid(.~UserID)
-ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),],aes(x = TouchOffsetX, y = TouchOffsetY, color = DominantHandCoded))+geom_point(alpha=.3)
-
+#Old code below this point
 fit <- lm(TouchOffsetX ~ OutsetXcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalXcoded+CrossTargetCoded+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(fit)
 step(fit)
 summary(step(fit))
+
+
+biasApproach<-sqldf("select inputHand, ApproachFromLRsideFactor, avg(TouchOffsetX) as avgXbias, avg(TouchOffsetY) as avgYbias from data where hittype='Goal' group by inputHand, ApproachFromLRsideFactor")
+biasApproachdf9<-sqldf("select inputHand, ApproachFromLRsideFactor, avg(TouchOffsetX) as avgXbias, avg(TouchOffsetY) as avgYbias from data where hittype='Center' and ApproachFromLRsideFactor<>'NA' group by inputHand, ApproachFromLRsideFactor")
+ggplot(biasApproach,aes(avgXbias,avgYbias,colour=inputHand, shape=ApproachFromLRsideFactor, group=interaction(inputHand, ApproachFromLRsideFactor)))+
+  geom_point()+coord_fixed(ratio=1)+xlim(-2,2)+ylim(-2,2)
+ggplot(biasApproachdf9,aes(avgXbias,avgYbias,colour=inputHand, group=interaction(inputHand, ApproachFromLRsideFactor)))+
+  geom_point()+coord_fixed(ratio=1)+xlim(-3,3)+ylim(-3,3)+facet_grid(.~ApproachFromLRsideFactor)
+ggplot(data,aes(TouchOffsetX,TouchOffsetY,colour=inputHand))+
+  geom_point()+coord_fixed(ratio=1)+xlim(-10,10)+ylim(-10,10)+facet_grid(.~ApproachFromLRsideFactor)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 fitH<-lm(DominantHandCoded~ TouchOffsetX*OutsetXcoded*GoalXcoded*CrossTargetCoded*TargetSize, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
 summary(step(fitH))
 predict(fitH,data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),])
 data$predictScore<-NA
 data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]$predictScore<-predict(fitH,data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]) 
-datapredicted
 simple_roc(data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]$DominantHandCoded,data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),]$predicted)
 
 fity <- lm(TouchOffsetY ~ OutsetYcoded*fromIpsilateral*DominantHandCoded+DominantHandCoded*GoalYcoded+CrossTargetCoded+DominantHandCoded, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
