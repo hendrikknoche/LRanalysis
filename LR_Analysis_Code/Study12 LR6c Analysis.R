@@ -156,9 +156,9 @@ ggplot(data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" ),
 data$PID<-data$UserID 
 
 #Check if playing hand is the dominant hand. Not sure we need this since people only used their dominant hand in this study.
-data$isDomHand <-ifelse(stri_length(data$PlayingHand)>1,0,1)  
-data$inputHand <- ifelse(stri_length(data$PlayingHand)<2,substr(data$PlayingHand,1,1),ifelse(substr(data$PlayingHand,1,1)=='L','R','L'))
-parti<-sqldf("select distinct studyID, PID,inputHand as Handed, age, gender, DominantEye from data where isDomHand=1 ")
+#data$isDomHand <-ifelse(stri_length(data$PlayingHand)>1,0,1)  
+#data$inputHand <- ifelse(stri_length(data$PlayingHand)<2,substr(data$PlayingHand,1,1),ifelse(substr(data$PlayingHand,1,1)=='L','R','L'))
+parti<-sqldf("select distinct studyID, PID,DominantHand as Handed, age, gender, DominantEye from data")
 data$DominantEyenew<-ifelse(stri_length(data$DominantEye)==1 & data$StudyID == 12, ifelse(substr(data$DominantEye,1,1)=="L","LLL","RRR") ,substr(data$DominantEye,1,3))
 data<-merge(data, parti[,1:3], by = c("StudyID","PID"))
 
@@ -215,14 +215,14 @@ data$inDeg<-atan2(data$inVectorY,data$inVectorX)*(180/pi)
 data$outDeg<-atan2(data$outVectorY,data$outVectorX)*(180/pi)
 
 #Convert the R or L hand in to binary numbers (1 or -1)
-data$inputHandBinary <- ifelse(data$inputHand=="R",1,-1)
+data$inputHandBinary <- ifelse(data$DominantHand=="R",1,-1)
 
-#Finding out where the user is comming from
+#Finding out where the user is comming from. THIS NEEDS TO BE UPDATED TO FIT THIS STUDY, OU CAN COME FROM FOUR DIFFERENT DIRECTIONS
 data$ApproachFromLR <-ifelse(data$TargetDistance<0,-1,ifelse(data$TargetDistance>0,1,0))
 data$ApproachFromLR <-ifelse(data$StudyID==12,ifelse(data$inVectorX<0,-1,ifelse(data$inVectorX>0,1,0)),data$ApproachFromLR)
 data$ApproachFromLRsideFactor <-ifelse(data$ApproachFromLR<0,"from R" ,ifelse(data$ApproachFromLR>0,"from L","fromTopBottom"))
 
-#Finding where the user is going. 
+#Finding where the user is going. THIS NEEDS TO BE UPDATED TO FIT THIS STUDY YOU ARE NOT ONLY HEADING LEFT OR RIGHT.
 data$headingIntoDir<-ifelse(data$outVectorX<0,-1,1)
 data$headingIntoDirFactor <-ifelse(data$headingIntoDir<0,"Heading Left" ,"Heading Right")
 
@@ -257,7 +257,7 @@ data$YfromBottom <- data$TargetY-min(data$TargetY)
 data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
 data$Xparallax <- (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)/55*54.83 - (data$XoffCenter-data$GenderEyeOffSet*data$EyeBinary)
 
-#Make every single combination of the outset and goal. (code from study 11)
+#Make every single combination of the outset and goal. (below code from study 11)
 data$TargetCombination<-paste(data$Outset,data$Goal,sep = "")
 
 #Make the dominant hand binary L = -1 and R = 1
@@ -284,7 +284,7 @@ data$slideX<-data$LiftOffsetX-data$TouchOffsetX
 data$slideY<-data$LiftOffsetY-data$TouchOffsetY
 
 #Merge all the data together
-mergedData<-merge(data, touchData, by=c("FileID","UserID","TouchID"))
+mergedData<-merge(data, touchData, by=c("UserID","TouchID"))
 mergedData<-mergedData[order(c(mergedData$Filedata$Time,mergedData$Time)),]
 
 #------------------------------------ Part 3 Analysing the touchEvent data --------------------------------------------
@@ -298,30 +298,10 @@ ggplot(debugSD,aes(x = TouchOffsetX, y = TouchOffsetY, size = TargetSize, color 
 #Using the function found in marginal_plot.R to show the distrubrution of touches based on the input hand 
 source("marginal_plot.R")
 
-#Scatterplot with marginal of all the touches
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = inputHand, data = data[data$HitType=='Center',], bw = "nrd", 
+#Scatterplot with marginal based on the outset
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = DominantHandCoded, data = data[data$HitType=='Center',], bw = "nrd", 
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
-#Scatterplot with marginal based on the input hand
-bxp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' & data$DominantHand=='R',], bw = "nrd", 
-              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
-dp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' & data$DominantHand=='L',], bw = "nrd", 
-              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
-
-ggarrange(bxp, dp, 
-          labels = c("A", "B"),
-          ncol = 2, nrow = 1)
-
-
-##Scatterplot with marginal of all the touches, but Left has been mirrored over the the right. 
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center',], bw = "nrd", 
-              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
-
-##Scatterplot with marginal based on the inputhand, but Left has been mirrored over the the right. 
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$DominantHand=='R' & data$HitType=='Center',], bw = "nrd", 
-              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' & data$DominantHand=='L',], bw = "nrd", 
-              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
 ### After illusrtating how the data deviates and how the data can be mirrored on to one andother it is time to understand why 
 
@@ -333,7 +313,27 @@ fit <- lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded*GoalXcoded*CrossTargetCo
 summary(fit)
 summary(step(fit))
 
-### Based on this summary it is clear that the dominant hand has a significant effect on the data
+### Based on this summary it is clear that the outset has an effect on the data
+
+#Scatterplot with marginal based on the outset
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center',], bw = "nrd", 
+              lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+
+#Scatterplot with marginal based on the outset speteted into each hand
+bxp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$DominantHand=='R',], bw = "nrd", 
+                   lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+dp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$DominantHand=='L',], bw = "nrd", 
+                  lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+
+#Scatterplot with marginal based on the outset speteted into each outset
+ePlot<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$Outset=='E',], bw = "nrd", 
+                     lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+wPlot<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$Outset=='W',], bw = "nrd", 
+                     lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+nPlot<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$Outset=='N',], bw = "nrd", 
+                     lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+sPlot<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$Outset=='S',], bw = "nrd", 
+                     lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
 
 #Each touch based on the input direction.
