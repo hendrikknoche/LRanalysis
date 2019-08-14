@@ -10,6 +10,7 @@ Study <- '12'
 options(install.lock = FALSE) 
 
 library(ggplot2)
+library(ggpubr)
 library(Rmisc)
 library(ROCR)
 library(dplyr)
@@ -18,6 +19,7 @@ library(sqldf)
 library(pROC)
 library(RMySQL)
 library(stringi)
+
 
 source(file.path(Sys.getenv("HOME"),"config.R"))
 
@@ -216,9 +218,9 @@ data$outDeg<-atan2(data$outVectorY,data$outVectorX)*(180/pi)
 data$inputHandBinary <- ifelse(data$inputHand=="R",1,-1)
 
 #Finding out where the user is comming from
-data$ApproachFromLR <-ifelse(data$TargetDistance<0,-1,1)
-data$ApproachFromLR <-ifelse(data$StudyID==12,ifelse(data$inVectorX<0,-1,1),data$ApproachFromLR)
-data$ApproachFromLRsideFactor <-ifelse(data$ApproachFromLR<0,"from R" ,"from L")
+data$ApproachFromLR <-ifelse(data$TargetDistance<0,-1,ifelse(data$TargetDistance>0,1,0))
+data$ApproachFromLR <-ifelse(data$StudyID==12,ifelse(data$inVectorX<0,-1,ifelse(data$inVectorX>0,1,0)),data$ApproachFromLR)
+data$ApproachFromLRsideFactor <-ifelse(data$ApproachFromLR<0,"from R" ,ifelse(data$ApproachFromLR>0,"from L","fromTopBottom"))
 
 #Finding where the user is going. 
 data$headingIntoDir<-ifelse(data$outVectorX<0,-1,1)
@@ -301,19 +303,24 @@ marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = inputHand, data = data
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
 #Scatterplot with marginal based on the input hand
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = inputHand, data = data[data$HitType=='Center' && data$DominantHand=='R',], bw = "nrd", 
+bxp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' & data$DominantHand=='R',], bw = "nrd", 
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = inputHand, data = data[data$HitType=='Center' && data$DominantHand=='L',], bw = "nrd", 
+dp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' & data$DominantHand=='L',], bw = "nrd", 
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
+
+ggarrange(bxp, dp, 
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1)
+
 
 ##Scatterplot with marginal of all the touches, but Left has been mirrored over the the right. 
 marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center',], bw = "nrd", 
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
 ##Scatterplot with marginal based on the inputhand, but Left has been mirrored over the the right. 
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$DominantHand=='R' && data$HitType=='Center',], bw = "nrd", 
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$DominantHand=='R' & data$HitType=='Center',], bw = "nrd", 
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' && data$DominantHand=='L',], bw = "nrd", 
+marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = ApproachFromLRsideFactor, data = data[data$HitType=='Center' & data$DominantHand=='L',], bw = "nrd", 
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
 ### After illusrtating how the data deviates and how the data can be mirrored on to one andother it is time to understand why 
