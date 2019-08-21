@@ -246,6 +246,7 @@ data$YoffCenter<-data$TargetY-(round((max(data$TargetY)-min(data$TargetY))/2,0)+
 data$YfromBottom<-data$TargetY-min(data$TargetY)
 data$Yparallax <-  data$YfromBottom/45.15*45 -(data$YfromBottom)
 
+
 #Fix parallax 
 data$DominantEyenew<-ifelse(stri_length(data$DominantEye)==1, ifelse(substr(data$DominantEye,1,1)=="L","LLL","RRR") ,substr(data$DominantEye,1,3))
 data$eyeHelper <- ifelse(data$XoffCenter < -37,1,ifelse(data$XoffCenter < 38,2,3))
@@ -309,23 +310,31 @@ marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = DominantHandCoded, dat
 summary(lm(TouchOffsetX ~ OutsetXcoded, data= data[which(data$HitType == "Center" & data$MistakeOccured == "No"), ]))
 summary(lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded, data= data[which(data$HitType == "Center" & data$MistakeOccured == "No"), ]))
 summary(lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded*GoalXcoded, data= data[which(data$HitType == "Center" & data$MistakeOccured == "No"), ]))
-fit <- lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded*GoalXcoded*CrossTargetCoded*TargetSize, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No"),])
+fit <- lm(TouchOffsetX ~ OutsetXcoded*DominantHandCoded*GoalXcoded*slideX, data=data[which(data$HitType == "Center" & data$MistakeOccured == "No" & data$Position=='S'),])
 summary(fit)
 summary(step(fit))
+summary(lm(TouchOffsetX ~ DominantEyenew*DominantHandCoded, data= data[which(data$HitType == "Center" & data$MistakeOccured == "No"), ]))
+
+
+
+
 
 ### Based on this summary it is clear that the outset has an effect on the data
+
+
+
 
 #Scatterplot with marginal based on the outset
 marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center',], bw = "nrd", 
               lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
-#Scatterplot with marginal based on the outset speteted into each hand
+#Scatterplot with marginal based on the outset seperated into each hand
 bxp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$DominantHand=='R',], bw = "nrd", 
                    lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 dp<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$DominantHand=='L',], bw = "nrd", 
                   lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 
-#Scatterplot with marginal based on the outset speteted into each outset
+#Scatterplot with marginal based on the outset seperated into each outset
 ePlot<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$Outset=='E',], bw = "nrd", 
                      lm_formula = NULL, xlab = "Xbias in mm", ylab = "Ybias in mm", pch = 15, cex = 0.5)
 wPlot<-marginal_plot(x = TouchOffsetX, y = TouchOffsetY, group = Outset, data = data[data$HitType=='Center' & data$Outset=='W',], bw = "nrd", 
@@ -365,11 +374,21 @@ ggplot(data,aes(TouchOffsetX,TouchOffsetY,colour=inputHand))+
 
 
 
+##let's predict the input hand from the data 
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(mtcars))
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(data [which(data$HitType == "Center" & data$MistakeOccured == "No"),] )), size = smp_size)
 
+train <- data[which(data$HitType == "Center" & data$MistakeOccured == "No" & train_ind), ]
+test <- data[-train_ind, ]
 
+summary(glm(formula=inputHandBinary ~ TouchOffsetX*OutsetXcoded*GoalXcoded*slideX,data= train,family = binomial))
 
+fit_glm<-glm(formula=inputHandBinary ~ TouchOffsetX*OutsetXcoded*GoalXcoded*slideX,data= data[which(train$HitType == "Center" & data$MistakeOccured == "No"), ],family = binomial))
 
-
+# summary(glm(formula=inputHandBinary ~ DominantEye,data= train,family = binomial))
 
 
 
